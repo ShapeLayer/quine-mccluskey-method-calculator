@@ -47,7 +47,7 @@ public class QuineMcCluskeyWorker
         {
             foreach (QMCTerm term in eachList)
             {
-                if (term.Activate)
+                if (term.isActivated)
                 {
                     minimumSOP.Add(term);
                 }

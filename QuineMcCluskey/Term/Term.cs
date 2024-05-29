@@ -5,7 +5,7 @@ using QuineMcCluskey.Commons;
 using QuineMcCluskey.Exceptions;
 namespace QuineMcCluskey.Term;
 
-public class Term
+public class Term : IComparable
 {
     int _size;
     Bit[] _bits;
@@ -36,6 +36,18 @@ public class Term
     public Term(int size, Bit[] bits, SortedSet<int> includeIds) : this(size, bits)
     {
         this._includeIds = includeIds;
+    }
+
+    public int CompareTo(object obj)
+    {
+        if (obj == null) return 1;
+
+        Term other = obj as Term;
+        if (this.includeIds.Count != other.includeIds.Count)
+        {
+            return this.includeIds.Count - other.includeIds.Count;
+        }
+        return this.includeIds.First() - other.includeIds.First();
     }
 
     public TermDiff Diff(Term other)

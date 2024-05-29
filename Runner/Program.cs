@@ -23,6 +23,8 @@ public class Program
         worker.Compute();
         Console.WriteLine("After ============");
         Console.WriteLine(worker.ToString());
+        Console.WriteLine("Minimum SOP");
+        Console.WriteLine(string.Join(", ", worker.GetMinimumSOP()));
     }
     static void ReceiveInput()
     {
