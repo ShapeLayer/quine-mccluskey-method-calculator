@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuineMcCluskeyRunner", "Qui
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuineMcCluskeyTest", "QuineMcCluskeyTest\QuineMcCluskeyTest.csproj", "{46A2AF55-1507-476E-AB58-DFB5A387FB97}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimeImplicant", "PrimeImplicant\PrimeImplicant.csproj", "{79CA5CA2-2042-4EEE-943E-8C1C52B1D1AA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimeImplicantTest", "PrimeImplicantTest\PrimeImplicantTest.csproj", "{0EFED947-D3E0-4B8F-8DC9-63EFBFA2EE84}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +34,13 @@ Global
 		{46A2AF55-1507-476E-AB58-DFB5A387FB97}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{46A2AF55-1507-476E-AB58-DFB5A387FB97}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{46A2AF55-1507-476E-AB58-DFB5A387FB97}.Release|Any CPU.Build.0 = Release|Any CPU
+		{79CA5CA2-2042-4EEE-943E-8C1C52B1D1AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79CA5CA2-2042-4EEE-943E-8C1C52B1D1AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79CA5CA2-2042-4EEE-943E-8C1C52B1D1AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79CA5CA2-2042-4EEE-943E-8C1C52B1D1AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0EFED947-D3E0-4B8F-8DC9-63EFBFA2EE84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0EFED947-D3E0-4B8F-8DC9-63EFBFA2EE84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0EFED947-D3E0-4B8F-8DC9-63EFBFA2EE84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0EFED947-D3E0-4B8F-8DC9-63EFBFA2EE84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

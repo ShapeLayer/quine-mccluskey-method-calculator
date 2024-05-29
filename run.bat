@@ -1,1 +1,1 @@
-dotnet run --project .\QuineMcCluskeyRunner\QuineMcCluskeyRunner.csproj
+dotnet run --project .\Runner\Runner.csproj
