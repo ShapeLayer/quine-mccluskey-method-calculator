@@ -217,7 +217,7 @@ public class QMCTerm: Term.Term
 
     public override string ToString()
     {
-        return base.ToString() + $" -- {(this.isActivated ? "O" : "X")}";
+        return $"[{(this.isActivated ? "O" : "X")}] {base.ToString()}";
     }
 }
 
