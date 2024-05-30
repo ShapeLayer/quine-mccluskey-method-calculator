@@ -27,8 +27,17 @@ public class Program
         Console.WriteLine(string.Join(", ", worker.GetPrimeImplicants()));
         worker.FindEssentialPrimeImplicants();
     }
+
     static void ReceiveInput()
     {
-        Console.Write("Input number of variables: ");
+        Console.Write("Enter the number of variables: ");
+        int n = int.Parse(Console.ReadLine());
+        Console.Write("Enter the variables: ");
+        string[] variables = Console.ReadLine().Split(' ');
+        Console.Write("Enter the minterms: ");
+        int[] minterms = (
+            from x in Console.ReadLine().Split(' ')
+            select int.Parse(x)
+        ).ToArray();
     }
 }
