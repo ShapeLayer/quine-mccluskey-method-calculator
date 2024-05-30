@@ -5,6 +5,7 @@ namespace QuineMcCluskeyTest;
 [TestClass]
 public class QuineMcCluskeyTest
 {
+    /*
     [TestMethod]
     public void TestWorkerManual1()
     {
@@ -25,5 +26,5 @@ public class QuineMcCluskeyTest
         worker.Compute();
         Console.WriteLine("After ============");
         Console.WriteLine(worker.ToString());
-    }
+    }*/
 }

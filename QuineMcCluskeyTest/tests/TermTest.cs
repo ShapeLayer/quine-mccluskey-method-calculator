@@ -26,4 +26,24 @@ public class TermTest
         Assert.AreEqual(diffCalced.diffCount, diffGened.diffCount);
         CollectionAssert.AreEqual(diffCalced.diffs, diffGened.diffs);
     }
+
+    [TestMethod]
+    public void TestToVariables1()
+    {
+        Term a = new Term(4, new Bit[]{ Bit.T, Bit.F, Bit.F, Bit.F }, 0);
+        Assert.AreEqual(
+            a.ToVariables("abcd"),
+            "ab'c'd'"
+        );
+    }
+
+    [TestMethod]
+    public void TestToVariables2()
+    {
+        Term a = new Term(4, new Bit[]{ Bit.T, Bit.X, Bit.X, Bit.F }, 0);
+        Assert.AreEqual(
+            a.ToVariables("WXYZ"),
+            "WZ'"
+        );
+    }
 }

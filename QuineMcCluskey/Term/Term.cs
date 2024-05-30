@@ -37,6 +37,17 @@ public class Term : IComparable
     {
         this._includeIds = includeIds;
     }
+    public Term(int size, int id)
+    {
+        string binary = Convert.ToString(id, 2).PadLeft(size, '0');
+        this._size = size;
+        this._bits = new Bit[size];
+        for (int i = 0; i < size; i++)
+        {
+            this._bits[i] = binary[i] == '0' ? Bit.F : Bit.T;
+        }
+        this._includeIds = new SortedSet<int>() { id };
+    }
 
     public int CompareTo(object obj)
     {
@@ -78,7 +89,6 @@ public class Term : IComparable
         Bit[] newBits = new Bit[this.size];
         for (int i = 0; i < this.size; i++) { newBits[i] = diff.diffs[i] ? Bit.X : this.bits[i]; }
         // Merge ID
-        // Todo: length increases infinitely
         SortedSet<int> newIds = new SortedSet<int>();
         newIds.UnionWith(this.IncludeIds);
         newIds.UnionWith(other.IncludeIds);
@@ -104,7 +114,31 @@ public class Term : IComparable
             }
         }
         // return $"{eachBits.Count} {includeIds.Count}";
-        return "(" + string.Join(", ", IncludeIds) + ")\t" + string.Join(" ", eachBits);
+        return $"{string.Join("", eachBits)} ({string.Join(", ", IncludeIds)})";
+    }
+
+    public string ToVariables(string variables)
+    {
+        if (this.size != variables.Length)
+            throw new BitLenVarCountNotMatchError();
+
+        string[] rendered = new string[this.size];
+        for (int i = 0; i < this.size; i++)
+        {
+            switch (this.bits[i])
+            {
+                case Bit.X:
+                    rendered[i] = "";
+                    break;
+                case Bit.F:
+                    rendered[i] = $"{variables[i]}'";
+                    break;
+                case Bit.T:
+                    rendered[i] = $"{variables[i]}";
+                    break;
+            }
+        }
+        return string.Join("", rendered);
     }
 }
 
