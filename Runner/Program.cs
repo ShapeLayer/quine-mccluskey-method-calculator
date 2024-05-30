@@ -24,7 +24,8 @@ public class Program
         Console.WriteLine("After ============");
         Console.WriteLine(worker.ToString());
         Console.WriteLine("Minimum SOP");
-        Console.WriteLine(string.Join(", ", worker.GetMinimumSOP()));
+        Console.WriteLine(string.Join(", ", worker.GetPrimeImplicants()));
+        worker.FindEssentialPrimeImplicants();
     }
     static void ReceiveInput()
     {

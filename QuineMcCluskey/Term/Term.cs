@@ -13,7 +13,7 @@ public class Term : IComparable
 
     public int size { get { return _size; } }
     public Bit[] bits { get { return _bits; } }
-    public SortedSet<int> includeIds { get { return _includeIds; } }
+    public SortedSet<int> IncludeIds { get { return _includeIds; } }
 
     public Term()
     {
@@ -43,11 +43,11 @@ public class Term : IComparable
         if (obj == null) return 1;
 
         Term other = obj as Term;
-        if (this.includeIds.Count != other.includeIds.Count)
+        if (this.IncludeIds.Count != other.IncludeIds.Count)
         {
-            return this.includeIds.Count - other.includeIds.Count;
+            return this.IncludeIds.Count - other.IncludeIds.Count;
         }
-        return this.includeIds.First() - other.includeIds.First();
+        return this.IncludeIds.First() - other.IncludeIds.First();
     }
 
     public TermDiff Diff(Term other)
@@ -80,8 +80,8 @@ public class Term : IComparable
         // Merge ID
         // Todo: length increases infinitely
         SortedSet<int> newIds = new SortedSet<int>();
-        newIds.UnionWith(this.includeIds);
-        newIds.UnionWith(other.includeIds);
+        newIds.UnionWith(this.IncludeIds);
+        newIds.UnionWith(other.IncludeIds);
         return new Term(this.size, newBits, newIds);
     }
 
@@ -104,7 +104,7 @@ public class Term : IComparable
             }
         }
         // return $"{eachBits.Count} {includeIds.Count}";
-        return "(" + string.Join(", ", includeIds) + ")\t" + string.Join(" ", eachBits);
+        return "(" + string.Join(", ", IncludeIds) + ")\t" + string.Join(" ", eachBits);
     }
 }
 

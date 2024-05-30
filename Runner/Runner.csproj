@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\QuineMcCluskey\QuineMcCluskey.csproj" />
-    <ProjectReference Include="..\PrimeImplicant\PrimeImplicant.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -1,5 +1,7 @@
-﻿using System.Collections;
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using QuineMcCluskey.Commons;
 using QuineMcCluskey.Exceptions;
 using QuineMcCluskey.Term;
@@ -31,32 +33,37 @@ public class QuineMcCluskeyWorker
         this._variableExpressions = variableExpressions;
     }
 
-    public SortedSet<QMCTerm> MinimumSOP
+    public SortedSet<QMCTerm> PrimeImplicants
     {
         get
         {
             this.Compute();
-            return this.GetMinimumSOP();
+            return this.GetPrimeImplicants();
         }
     }
 
-    public SortedSet<QMCTerm> GetMinimumSOP()
+    public SortedSet<QMCTerm> GetPrimeImplicants()
     {
-        SortedSet<QMCTerm> minimumSOP = new SortedSet<QMCTerm>();
+        SortedSet<QMCTerm> primeImplicants = new SortedSet<QMCTerm>();
         foreach (List<QMCTerm> eachList in this.terms)
         {
             foreach (QMCTerm term in eachList)
             {
                 if (term.isActivated)
                 {
-                    minimumSOP.Add(term);
+                    primeImplicants.Add(term);
                 }
             }
         }
-        return minimumSOP;
+        return primeImplicants;
     }
 
     public void Compute()
+    {
+        this.FindPrimeImplicants();
+    }
+
+    public void FindPrimeImplicants()
     {
         int idx = 0;
         while (this.terms.Count > idx)
@@ -91,6 +98,92 @@ public class QuineMcCluskeyWorker
         }
     }
 
+    public void FindEssentialPrimeImplicants()
+    {
+        List<QMCTerm> _minimumSOPs = new List<QMCTerm>(this.PrimeImplicants);
+        Commons.DefaultDictionary<int, SortedSet<int>> idTermMatch = new Commons.DefaultDictionary<int, SortedSet<int>>();
+        bool[] isChecked = Enumerable.Repeat(false, _minimumSOPs.Count).ToArray();
+        SortedSet<QMCTerm> essentialPrimeImplicants = new SortedSet<QMCTerm>();
+
+        // Find essential prime impllicants
+        for (int i = 0; i < _minimumSOPs.Count; i++)
+        {
+            QMCTerm now = _minimumSOPs[i];
+            foreach (int includedId in now.IncludeIds)
+            {
+                idTermMatch[includedId].Add(i);
+            }
+        }
+
+        SortedSet<int> reducingTarget = new SortedSet<int>();
+        foreach (KeyValuePair<int, SortedSet<int>> kv in idTermMatch)
+        {
+            if (kv.Value.Count() == 1)
+            {
+                int idx = kv.Value.First();
+                QMCTerm selected = _minimumSOPs[idx];
+                if (!isChecked[idx])
+                {
+                    foreach (int includedId in selected.IncludeIds)
+                    {
+                        reducingTarget.Add(includedId);
+                    }
+                }
+                essentialPrimeImplicants.Add(selected);
+                isChecked[idx] = true;
+            }
+        }
+
+        // Find other prime implicants
+        List<SortedSet<QMCTerm>> otherPrimeImplicants = new List<SortedSet<QMCTerm>>();
+        while (true)
+        {
+            idTermMatch = new Commons.DefaultDictionary<int, SortedSet<int>>();
+            for (int i = 0; i < _minimumSOPs.Count; i++)
+            {
+                if (isChecked[i])
+                {
+                    continue;
+                }
+                QMCTerm now = _minimumSOPs[i];
+                foreach (int includedId in now.IncludeIds)
+                {
+                    if (reducingTarget.Contains(includedId))
+                    {
+                        continue;
+                    }
+                    idTermMatch[includedId].Add(i);
+                }
+            }
+            if (idTermMatch.Values.Count <= 0)
+            {
+                break;
+            }
+
+            otherPrimeImplicants.Add(new SortedSet<QMCTerm>());
+            int minCounts = idTermMatch.Values.Select(each => each.Count).Min();
+            foreach (KeyValuePair<int, SortedSet<int>> kv in idTermMatch)
+            {
+                if (kv.Value.Count() == minCounts)
+                {
+                    int idx = kv.Value.First();
+                    QMCTerm selected = _minimumSOPs[idx];
+                    if (!isChecked[idx])
+                    {
+                        foreach (int includedId in selected.IncludeIds)
+                        {
+                            reducingTarget.Add(includedId);
+                        }
+                    }
+                    otherPrimeImplicants.Last().Add(selected);
+                    isChecked[idx] = true;
+                    Array.Exists(isChecked, each => !each); // 종료 조건
+                }
+            }
+
+        }
+    }
+
     public override string ToString()
     {
         List<string> termsString = new List<string>();
@@ -116,7 +209,7 @@ public class QMCTerm: Term.Term
     public void Activate() { this._isActivated = true; }
     public void Deactivate() { this._isActivated = false; }
 
-    public QMCTerm(Term.Term term): base(term.size, term.bits, term.includeIds) { }
+    public QMCTerm(Term.Term term): base(term.size, term.bits, term.IncludeIds) { }
     protected QMCTerm(int size, Bit[] bits): base(size, bits) {}
     public QMCTerm(int size, Bit[] bits, int id): base(size, bits, id) {}
     public QMCTerm(int size, Bit[] bits, int[] includeIds): base(size, bits, includeIds) {}
