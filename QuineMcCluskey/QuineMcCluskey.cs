@@ -177,10 +177,6 @@ public class QuineMcCluskeyWorker
                 }
             }
         }
-        foreach (var each in otherPrimeImplicants)
-        {
-            Console.WriteLine($"aa {string.Join(", ", each)}");
-        }
     }
 
     public override string ToString()
