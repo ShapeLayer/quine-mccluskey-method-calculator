@@ -6,12 +6,5 @@ namespace PrimeImplicant;
 
 public class PrimeImplicant
 {
-    SortedSet<Term> _minimumSOPs = new SortedSet<Term>();
-    public PrimeImplicant(IEnumerable<Term> terms)
-    {
-        _minimumSOPs = new SortedSet<Term>(terms);
-    }
-
-    public void Compute()
-    {}
+    
 }

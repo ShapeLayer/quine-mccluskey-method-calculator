@@ -131,7 +131,7 @@ public class Term : IComparable
         return $"{string.Join("", eachBits)} ({string.Join(", ", IncludeIds)})";
     }
 
-    public string ToVariables(string variables)
+    public string ToVariables(string[] variables)
     {
         if (this.size != variables.Length)
             throw new BitLenVarCountNotMatchError();
