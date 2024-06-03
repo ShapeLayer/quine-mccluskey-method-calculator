@@ -52,15 +52,29 @@ public class Term : IComparable
     public int CompareTo(object obj)
     {
         if (obj == null) return 1;
-
         Term other = obj as Term;
+        if (other == null) return 1;
+        
         if (this.IncludeIds.Count != other.IncludeIds.Count)
         {
             return this.IncludeIds.Count - other.IncludeIds.Count;
         }
-        return this.IncludeIds.First() - other.IncludeIds.First();
+        for (int i = 0; i < this.IncludeIds.Count; i++)
+        {
+            int diff = this.IncludeIds.ElementAt(i) - other.IncludeIds.ElementAt(i);
+            if (diff != 0) return diff;
+        }
+        return 0;
     }
 
+    public override bool Equals(object? obj)
+    {
+        if (obj == null) return false;
+        Term other = obj as Term;
+        if (other == null) return false;
+        return this.CompareTo(other) == 0;
+    }
+    
     public TermDiff Diff(Term other)
     {
         int diffCount = 0;

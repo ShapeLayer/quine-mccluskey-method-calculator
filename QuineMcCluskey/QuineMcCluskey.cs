@@ -7,11 +7,6 @@ using QuineMcCluskey.Exceptions;
 using QuineMcCluskey.Term;
 namespace QuineMcCluskey;
 
-public class QuineMcCluskey
-{
-    
-}
-
 public class QuineMcCluskeyWorker
 {
     private List<List<QMCTerm>> _terms = new List<List<QMCTerm>>();
@@ -133,6 +128,7 @@ public class QuineMcCluskeyWorker
                 isChecked[idx] = true;
             }
         }
+        Console.WriteLine($"Essential Prime Implicants {string.Join(", ", essentialPrimeImplicants)}");
 
         // Find other prime implicants
         List<SortedSet<QMCTerm>> otherPrimeImplicants = new List<SortedSet<QMCTerm>>();
@@ -180,7 +176,10 @@ public class QuineMcCluskeyWorker
                     Array.Exists(isChecked, each => !each); // 종료 조건
                 }
             }
-
+        }
+        foreach (var each in otherPrimeImplicants)
+        {
+            Console.WriteLine($"aa {string.Join(", ", each)}");
         }
     }
 
@@ -219,5 +218,25 @@ public class QMCTerm: Term.Term
     {
         return $"[{(this.isActivated ? "O" : "X")}] {base.ToString()}";
     }
-}
 
+    public int CompareTo(object obj)
+    {
+        if (obj == null) return 1;
+        QMCTerm other = obj as QMCTerm;
+        if (other == null) return 1;
+
+        int baseCompared = base.CompareTo(obj);
+        return baseCompared;
+        if (baseCompared == 0)
+            return (this.isActivated ? 1 : 0) - (other.isActivated ? 1 : 0);
+        return baseCompared;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj == null) return false;
+        QMCTerm other = obj as QMCTerm;
+        if (other == null) return false;
+        return this.CompareTo(other) == 0;
+    }    
+}
