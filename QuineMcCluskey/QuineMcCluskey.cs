@@ -132,63 +132,70 @@ public class QuineMcCluskeyWorker
         return this._FindEssentialPrimeImplicants();
     }
 
-    public (List<SortedSet<int>> essentialPrimeImplicants, List<bool> isEPIOnce) _FindEssentialPrimeImplicants()
+    public (List<SortedSet<int>> epiListIdxSets, List<bool> epiMinCountIs1) _FindEssentialPrimeImplicants()
     {
         List<QMCTerm> primeImplicants = this.GetPrimeImplicants().ToList();
-        List<SortedSet<int>> essentialPrimeImplicants = new List<SortedSet<int>>();
-        SortedSet<int> beReduced = new SortedSet<int>();
-        List<bool> isEPIOnce = new List<bool>();
+        List<SortedSet<int>> epiListIdxSets = new List<SortedSet<int>>();
+        List<bool> epiMinCountIs1 = new List<bool>();
+        SortedSet<int> reducedTermId = new SortedSet<int>();
+        SortedSet<int> reducedListIdx = new SortedSet<int>();
+        
+        int totalTermIdCount = new SortedSet<int> (primeImplicants
+            .SelectMany(term => term.IncludeIds)
+        ).Count;
 
-        while (beReduced.Count < primeImplicants.Count)
+        while (reducedTermId.Count < totalTermIdCount)
         {
-            essentialPrimeImplicants.Add(new SortedSet<int>());
-            // Count id includes
+            // init
+            epiListIdxSets.Add(new SortedSet<int>());
+            epiMinCountIs1.Add(false);
+
+            // Count each term id exists
             DefaultDictionary<int, SortedSet<int>> idIncludes = new DefaultDictionary<int, SortedSet<int>>();
-            for (int i = 0; i < primeImplicants.Count; i++)
+            for (int listIdx = 0; listIdx < primeImplicants.Count; listIdx++)
             {
-                if (beReduced.Contains(i)) continue;
-                QMCTerm each = primeImplicants[i];
-                foreach (int id in each.IncludeIds)
-                {
-                    idIncludes[id].Add(i);
-                }
+                QMCTerm each = primeImplicants[listIdx];
+                foreach (int termId in each.IncludeIds)
+                    if (!reducedTermId.Contains(termId))                
+                        idIncludes[termId].Add(listIdx);
             }
-            // Find id included only one and term includes that id
-            SortedSet<int> includesMinIncluded = new SortedSet<int>();
-            IEnumerable<int> includeCounts =
-                from kv in idIncludes
-                select kv.Value.Count;
-            int minIncludeCounts = includeCounts.Min();
-            isEPIOnce.Add(minIncludeCounts == 1);
-            
-            foreach (KeyValuePair<int, SortedSet<int>> kv in idIncludes)
+
+            foreach (var kv in idIncludes)
+                Console.WriteLine($"KV {kv.Key}: {string.Join(", ", kv.Value)}");
+
+            // Find Minimum Count that Each Valid Term
+            int minIncludeCounts = idIncludes
+                .Where(kv => !reducedTermId.Contains(kv.Key))
+                .Select(kv => kv.Value.Count)
+                .Min();
+            epiMinCountIs1[epiMinCountIs1.Count - 1] = (minIncludeCounts == 1);
+
+            // Mark Reducing Targets
+            foreach (var kv in idIncludes)
             {
-                if (kv.Value.Count == minIncludeCounts) // Min, isOnce
+                if (kv.Value.Count == minIncludeCounts)
                 {
-                    int i = kv.Value.First();
-                    if (beReduced.Contains(i)) continue;
-                    includesMinIncluded.Add(i);
-                }
-            }
-            // Mark that be reduced
-            // 이쪽 처리가 다 잘못된듯
-            foreach (int i in includesMinIncluded)
-            {
-                for (int j = 0; j < primeImplicants.Count; j++)
-                {
-                    if (beReduced.Contains(j)) continue;
-                    QMCTerm each = primeImplicants[i];
-                    if (each.IncludeIds.Contains(i))
+                    reducedTermId.Add(kv.Key);
+                    foreach(int listIdx in kv.Value)
                     {
-                        // Add to top
-                        essentialPrimeImplicants.Last().Add(j);
-                        // Mark to reduced
-                        beReduced.Add(j);
+                        if (!reducedListIdx.Contains(listIdx)) {
+                            epiListIdxSets.Last().Add(listIdx);
+                            reducedListIdx.Add(listIdx);
+                        }
                     }
                 }
             }
+            foreach (var listIdx in reducedListIdx)
+            {
+                QMCTerm each = primeImplicants[listIdx];
+                foreach (int termId in each.IncludeIds)
+                {
+                    reducedTermId.Add(termId);
+                }
+            }
         }
-        return (essentialPrimeImplicants, isEPIOnce);
+        
+        return (epiListIdxSets, epiMinCountIs1);
     }
 
     public override string ToString()

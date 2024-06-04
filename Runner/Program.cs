@@ -24,8 +24,15 @@ public class Program
         Console.WriteLine("After ============");
         Console.WriteLine(worker.ToString());
         Console.WriteLine("Prime Implicants");
-        Console.WriteLine(string.Join("\n", worker.GetPrimeImplicants()));
-        worker.FindEssentialPrimeImplicants();
+
+        SortedSet<QMCTerm> primeImplicants = worker.GetPrimeImplicants();
+        (List<SortedSet<int>> essentialPrimeImplicants, List<bool> isEPIOnce) = worker.FindEssentialPrimeImplicants();
+
+        Console.WriteLine(string.Join(", ", primeImplicants));
+        for (int i = 0; i < essentialPrimeImplicants.Count; i++)
+        {
+            Console.WriteLine($"{i} {isEPIOnce[i]} {string.Join(", ", essentialPrimeImplicants[i])}");
+        }
     }
 
     static void ReceiveInput()
