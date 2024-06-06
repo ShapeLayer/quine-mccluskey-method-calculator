@@ -61,18 +61,18 @@ public class Program
     static ProgramInputFormat ReceiveInput()
     {
         ProgramInputFormat inputFormat = new ProgramInputFormat();
-        Console.Write("Enter the number of variables: ");
+        Console.Write("Enter the number of literals: ");
         inputFormat.argc = int.Parse(Console.ReadLine());
         while (true)
         {
-            Console.Write("Enter the variables (must be seperated by space(' ')): ");
+            Console.Write("Enter the literals (must be seperated by space(' ')): ");
             string[] argv = Console.ReadLine().Split(' ');
             if (argv.Length == inputFormat.argc)
             {
                 inputFormat.argv = argv;
                 break;
             }
-            Console.WriteLine($"Error! Length of variables({argv.Length} is not number of variables that entered ({inputFormat.argc}))");
+            Console.WriteLine($"Error! Length of literals({argv.Length} is not number of literals that entered ({inputFormat.argc}))");
         }
         
         Console.Write("Enter the minterms (must be seperated by space(' ')): ");
