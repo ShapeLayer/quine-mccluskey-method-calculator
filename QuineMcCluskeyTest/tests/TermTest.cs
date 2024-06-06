@@ -32,7 +32,7 @@ public class TermTest
     {
         Term a = new Term(4, new Bit[]{ Bit.T, Bit.F, Bit.F, Bit.F }, 0);
         Assert.AreEqual(
-            a.ToVariables("abcd"),
+            a.ToVariables(new string[] {"a", "b", "c", "d"}),
             "ab'c'd'"
         );
     }
@@ -42,7 +42,7 @@ public class TermTest
     {
         Term a = new Term(4, new Bit[]{ Bit.T, Bit.X, Bit.X, Bit.F }, 0);
         Assert.AreEqual(
-            a.ToVariables("WXYZ"),
+            a.ToVariables(new string[] {"W", "X", "Y", "Z"}),
             "WZ'"
         );
     }

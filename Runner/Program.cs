@@ -26,13 +26,15 @@ public class Program
         Console.WriteLine("Prime Implicants");
 
         SortedSet<QMCTerm> primeImplicants = worker.GetPrimeImplicants();
-        (List<SortedSet<int>> essentialPrimeImplicants, List<bool> isEPIOnce) = worker.FindEssentialPrimeImplicants();
+        List<SortedSet<QMCTerm>> essentialPrimeImplicants = worker.FindEssentialPrimeImplicants();
 
-        Console.WriteLine(string.Join(", ", primeImplicants));
-        for (int i = 0; i < essentialPrimeImplicants.Count; i++)
+        foreach(var set in essentialPrimeImplicants)
         {
-            Console.WriteLine($"{i} {isEPIOnce[i]} {string.Join(", ", essentialPrimeImplicants[i])}");
+            Console.WriteLine(string.Join(", ", set));
         }
+
+        Console.WriteLine("Result");
+        Console.WriteLine(string.Join("\n", worker.RenderMinSOP()));
     }
 
     static void ReceiveInput()

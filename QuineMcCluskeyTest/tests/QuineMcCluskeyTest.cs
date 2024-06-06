@@ -25,7 +25,7 @@ public class QuineMcCluskeyTest
         
         bool areEqual = true;
         List<QMCTerm> implicantsWorked = worker.PrimeImplicants.ToList();
-        List<QMCTerm> implicantsManual = new List<QMCTerm>(new QMCTerm[]{
+        List<QMCTerm> implicantsManual = new List<QMCTerm>(new QMCTerm[] {
             new QMCTerm(4, new Bit[]{ Bit.F, Bit.X, Bit.F, Bit.F }, new int[]{ 0, 4 }),
             new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.F, Bit.X }, new int[]{ 4, 5 }),
             new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.X, Bit.T }, new int[]{ 5, 7 }),
@@ -39,5 +39,25 @@ public class QuineMcCluskeyTest
             areEqual = areEqual && (implicantsManual[i].Equals(implicantsWorked[i]));
         }
         Assert.IsTrue(areEqual);
+    }
+
+    [TestMethod]
+    public void TestWorkerRenderMinimumSOPManual1()
+    {
+        QuineMcCluskeyWorker worker = new QuineMcCluskeyWorker(
+            new List<QMCTerm> {
+                new QMCTerm(4, new Bit[]{ Bit.F, Bit.F, Bit.F, Bit.F }, 0),  // A
+                new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.F, Bit.F }, 4),  // B
+                new QMCTerm(4, new Bit[]{ Bit.T, Bit.F, Bit.F, Bit.F }, 8),  // C
+                new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.F, Bit.T }, 5),  // D
+                new QMCTerm(4, new Bit[]{ Bit.T, Bit.T, Bit.F, Bit.F }, 12), // E
+                new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.T, Bit.T }, 7),  // F
+                new QMCTerm(4, new Bit[]{ Bit.T, Bit.F, Bit.T, Bit.T }, 11), // G
+                new QMCTerm(4, new Bit[]{ Bit.T, Bit.T, Bit.T, Bit.T }, 15)  // H
+            }, 4, new string[] {"w", "x", "y", "z"}
+        );
+        SortedSet<string> minSOPWorked = new SortedSet<string>( worker.RenderMinSOP() );
+        SortedSet<string> minSOPManual = new SortedSet<string>( new string[]{ "w'xy' + w'xz + xyz + wyz", "w'xy' + w'xz + xyz + y'z'" } );
+        Assert.IsTrue(minSOPManual.Except(minSOPWorked).Count() == 0);
     }
 }
