@@ -13,6 +13,33 @@ public class Program
 
     public static void Main(string[] args)
     {
+        QuineMcCluskey.QuineMcCluskey _worker = new QuineMcCluskey.QuineMcCluskey(
+            new List<QMCTerm> {
+                new QMCTerm(4, 1),
+                new QMCTerm(4, 3),
+                new QMCTerm(4, 5),
+                new QMCTerm(4, 6),
+                new QMCTerm(4, 7),
+                new QMCTerm(4, 13),
+                new QMCTerm(4, 14),
+            },
+            new List<QMCTerm> {
+                new QMCTerm(4, 8),
+                new QMCTerm(4, 10),
+                new QMCTerm(4, 12)
+            }, 
+            4, new string[]{"w", "x", "y", "z"}
+        );
+
+        var epi = _worker.FindEssentialPrimeImplicants();
+        Console.WriteLine(epi.Count);
+        foreach (var each in epi)
+        {
+            Console.WriteLine(string.Join(", ", each));
+        }
+        Console.WriteLine(string.Join("\n", _worker.RenderMinSOP()));
+
+        return;
         ProgramInputFormat inputFormat = ReceiveInput();
         List<QMCTerm> qmcTerms = new List<QMCTerm>();
         foreach(int termId in inputFormat.minterms)

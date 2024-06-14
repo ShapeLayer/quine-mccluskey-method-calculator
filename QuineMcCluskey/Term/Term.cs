@@ -49,6 +49,25 @@ public class Term : IComparable
         this._includeIds = new SortedSet<int>() { id };
     }
 
+    public string HashIncludeIds()
+    {
+        return string.Join(" ", this.IncludeIds);
+    }
+
+    public string IdHash
+    {
+        get { return this.HashIncludeIds(); }
+    }
+
+    public static string HashIdSet(int id)
+    {
+        return $"{id}";
+    }
+    public static string HashIdSet(SortedSet<int> ids)
+    {
+        return string.Join(" ", ids);
+    }
+
     public int CompareTo(object obj)
     {
         if (obj == null) return 1;
@@ -166,4 +185,48 @@ public record TermDiff {
         this.diffCount = diffCount;
         this.diffs = diffs;
     }
+}
+
+
+public class QMCTerm: Term
+{
+    bool _isActivated = true;
+    public bool isActivated { get { return _isActivated; } }
+    public void Activate() { this._isActivated = true; }
+    public void Deactivate() { this._isActivated = false; }
+
+    public QMCTerm() {}
+    public QMCTerm(Term term): base(term.size, term.bits, term.IncludeIds) {}
+    protected QMCTerm(int size, Bit[] bits): base(size, bits) {}
+    public QMCTerm(int size, Bit[] bits, int id): base(size, bits, id) {}
+    public QMCTerm(int size, Bit[] bits, int[] includeIds): base(size, bits, includeIds) {}
+
+    public QMCTerm(int size, int id): base(size, id) {}
+
+
+    public override string ToString()
+    {
+        return $"[{(this.isActivated ? "O" : "X")}] {base.ToString()}";
+    }
+
+    public int CompareTo(object obj)
+    {
+        if (obj == null) return 1;
+        QMCTerm other = obj as QMCTerm;
+        if (other == null) return 1;
+
+        int baseCompared = base.CompareTo(obj);
+        return baseCompared;
+        if (baseCompared == 0)
+            return (this.isActivated ? 1 : 0) - (other.isActivated ? 1 : 0);
+        return baseCompared;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj == null) return false;
+        QMCTerm other = obj as QMCTerm;
+        if (other == null) return false;
+        return this.CompareTo(other) == 0;
+    }    
 }
