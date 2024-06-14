@@ -195,6 +195,7 @@ public class QuineMcCluskey
     }
 
     // this.FindEssentialPrimeImplicants()
+    // not work correctly.
     public List<SortedSet<QMCTerm>> FindEssentialPrimeImplicants() => this._FindEssentialPrimeImplicants();
     private List<SortedSet<QMCTerm>> _FindEssentialPrimeImplicants()
     {
