@@ -124,14 +124,31 @@ public class Program
             Console.WriteLine($"Error! Length of literals({argv.Length} is not number of literals that entered ({inputFormat.argc}))");
         }
         
+        string gets;
         Console.Write("Enter the terms (must be seperated by space(' ')): ");
-        inputFormat.terms = Console.ReadLine().Split(' ')
-            .Select(x => int.Parse(x))
-            .ToArray();
+        gets = Console.ReadLine();
+        if (gets.Length > 0)
+        {
+            inputFormat.terms = gets.Split(' ')
+                .Select(x => int.Parse(x))
+                .ToArray();
+        }
+        else
+        {
+            inputFormat.terms = new int[] {};
+        }
         Console.Write("Enter the don't cares (must be seperated by space(' ')): ");
-        inputFormat.dontCares = Console.ReadLine().Split(' ')
-            .Select(x => int.Parse(x))
-            .ToArray();
+        gets = Console.ReadLine();
+        if (gets.Length > 0)
+        {
+            inputFormat.dontCares = gets.Split(' ')
+                .Select(x => int.Parse(x))
+                .ToArray();
+        }
+        else
+        {
+            inputFormat.dontCares = new int[] {};
+        }
         return inputFormat;
     }
 
