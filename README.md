@@ -3,6 +3,11 @@
 
 This libaray and runner requires .NET 8.0. To download .NET 8.0, visit [Download Page](https://dotnet.microsoft.com/en-us/download).
 
+## Caution
+Since I had to write this code in a short time, I wrote it without considering many things.
+
+In particular, The efficiency and consistency of the algorithm are concerned. Testing has only been done for a very small number of cases, so don't trust.
+
 ## Getting Started
 
 ### Run Project
@@ -50,8 +55,3 @@ sh ./test.sh
 [**`QuineMcCluskey.Term`**](./QuineMcCluskey/Term/)  
 * `class Term : IComparable`
 * `record TermDiff`
-
-## Caution
-Since I had to write this code in a short time, I wrote it without considering many things.
-
-In particular, The efficiency and consistency of the algorithm are concerned. Testing has only been done for a very small number of cases, so don't trust it.
