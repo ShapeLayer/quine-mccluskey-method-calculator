@@ -3,10 +3,10 @@
 
 This libaray and runner requires .NET 8.0. To download .NET 8.0, visit [Download Page](https://dotnet.microsoft.com/en-us/download).
 
-## Caution
-Since I had to write this code in a short time, I wrote it without considering many things.
-
-In particular, The efficiency and consistency of the algorithm are concerned. Testing has only been done for a very small number of cases, so don't trust.
+> [!warning]  
+> Since I had to write this code in a short time, I wrote it without considering many things.  
+>
+> In particular, The efficiency and consistency of the algorithm are concerned. Testing has only been done for a very small number of cases, so don't trust this.
 
 ## Getting Started
 
