@@ -1,10 +1,20 @@
 using QuineMcCluskey.Commons;
+using QuineMcCluskey.Exceptions;
 using QuineMcCluskey.Term;
 namespace QuineMcCluskeyTest;
 
 [TestClass]
 public class TermTest
 {
+    [TestMethod]
+    public void MergeRejectsDifferentWildcardPositions()
+    {
+        var minterm = new Term(2, new[] { Bit.F, Bit.T }, 1);
+        var cube = new Term(2, new[] { Bit.X, Bit.T }, new[] { 1, 3 });
+
+        Assert.ThrowsException<TermDiffCountNot1Error>(() => minterm.Merge(cube));
+    }
+
     [TestMethod]
     public void TestTermDiffManual1()
     {

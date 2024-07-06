@@ -1,15 +1,12 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using QuineMcCluskey.Commons;
-using QuineMcCluskey.Exceptions;
 using QuineMcCluskey.Term;
 namespace QuineMcCluskey;
 
 public class QuineMcCluskey
 {
-    Term.QMCTerm term = new Term.QMCTerm();
     // this.Terms
     private DefaultDictionary<string, Term.QMCTerm> _terms = new DefaultDictionary<string, Term.QMCTerm>();
     public DefaultDictionary<string, Term.QMCTerm> Terms { get { return _terms; } }
@@ -122,310 +119,144 @@ public class QuineMcCluskey
         if (!validationPass) throw new ArgumentException();
     }
 
-    // this.MergeTerms()
-    public List<List<QMCTerm>> MergeTerms() => this._MergeTerms();
-    private List<List<QMCTerm>> _MergeTerms()
+    public List<List<QMCTerm>> MergeTerms()
+        => MergeTerms(this.Terms.Values.OrderBy(term => term).ToList());
+
+    internal static List<List<QMCTerm>> MergeTerms(List<QMCTerm> initialTerms)
     {
-        List<List<QMCTerm>> mergedTerms = new List<List<QMCTerm>>
-        {
-            new List<QMCTerm>
-            (
-                (
-                    from id in this.TotalTerms
-                    select this.Terms[Term.Term.HashIdSet(id)]
-                ).ToList()
-            )
-        };
+        // reset the flags: callers can run the merge more than once
+        foreach (QMCTerm term in initialTerms)
+            term.Activate();
 
-        int idx = 0;
-        while (mergedTerms.Count > idx)
+        var stages = new List<List<QMCTerm>> { initialTerms };
+        for (int stage = 0; stage < stages.Count; stage++)
         {
-            List<QMCTerm> now = mergedTerms[idx];
-            SortedSet<string> idHashSets = new SortedSet<string>();
-            for (int i = 0; i < now.Count; i++)
+            List<QMCTerm> current = stages[stage];
+            var next = new List<QMCTerm>();
+            var mergedIds = new HashSet<string>();
+            for (int i = 0; i < current.Count; i++)
             {
-                for (int j = i + 1; j < now.Count; j++)
+                for (int j = i + 1; j < current.Count; j++)
                 {
-                    QMCTerm a = now[i], b = now[j], c = null;
+                    QMCTerm a = current[i], b = current[j];
+                    TermDiff diff = a.Diff(b);
+                    if (!a.CanMerge(b, diff))
+                        continue;
 
-                    if (a.Diff(b).diffCount == 1)
-                    {
-                        c = new QMCTerm(a.Merge(b));
-                    }
-                    if (c != null)
-                    {
-                        a.Deactivate();
-                        b.Deactivate();
-                        if (idHashSets.Contains(c.IdHash))
-                        {
-                            continue;
-                        }
-                        if (idx + 1 == mergedTerms.Count)
-                        {
-                            mergedTerms.Add(new List<QMCTerm>());
-                        }
-                        mergedTerms[idx + 1].Add(c);
-                        idHashSets.Add(c.IdHash);
-                    }
+                    // merged terms cease to be prime candidates
+                    // but can still merge with other terms => deactivate
+                    a.Deactivate();
+                    b.Deactivate();
+                    var merged = new QMCTerm(a.Merge(b, diff));
+                    if (mergedIds.Add(merged.IdHash))
+                        next.Add(merged);
                 }
             }
-            idx++;
+
+            if (next.Count > 0)
+                stages.Add(next);
         }
-        return mergedTerms;
+
+        return stages;
     }
 
-    // this.PrimeImplicants
-    public SortedSet<QMCTerm> PrimeImplicants
+    internal static SortedSet<QMCTerm> GetPrimeImplicants(List<List<QMCTerm>> stages)
+        => new SortedSet<QMCTerm>(stages.SelectMany(stage => stage).Where(term => term.isActivated));
+
+    public SortedSet<QMCTerm> PrimeImplicants => GetPrimeImplicants(this.MergeTerms());
+
+    public SortedSet<QMCTerm> GetEssentialPrimeImplicants()
     {
-        get
+        List<QMCTerm> primes = this.PrimeImplicants.ToList();
+        var chart = BuildPrimeImplicantChart(primes, this.Requires);
+        return new SortedSet<QMCTerm>(chart.Values
+            .Where(rows => rows.Count == 1)
+            .Select(rows => primes[rows[0]]));
+    }
+
+    public List<SortedSet<QMCTerm>> FindEssentialPrimeImplicants()
+        => FindMinimumCovers(this.PrimeImplicants, this.Requires);
+
+    private static Dictionary<int, List<int>> BuildPrimeImplicantChart(
+        List<QMCTerm> primes, IEnumerable<int> requiredIds)
+    {
+        // dontcare term
+        var chart = requiredIds.Distinct().ToDictionary(id => id, _ => new List<int>());
+        for (int i = 0; i < primes.Count; i++)
         {
-            SortedSet<QMCTerm> primeImplicants = new SortedSet<QMCTerm>();
-            foreach (List<QMCTerm> eachList in this.MergeTerms())
+            foreach (int id in primes[i].IncludeIds)
             {
-                foreach (QMCTerm term in eachList)
-                {
-                    if (term.isActivated)
-                    {
-                        primeImplicants.Add(term);
-                    }
-                }
+                if (chart.TryGetValue(id, out var rows))
+                    rows.Add(i);
             }
-            return primeImplicants;
+        }
+
+        return chart;
+    }
+
+    internal static List<SortedSet<QMCTerm>> FindMinimumCovers(
+        SortedSet<QMCTerm> primeImplicants, IEnumerable<int> requiredIds)
+    {
+        List<QMCTerm> primes = primeImplicants.ToList();
+        var chart = BuildPrimeImplicantChart(primes, requiredIds);
+        var literalCounts = primes.Select(term => term.bits.Count(bit => bit != Bit.X)).ToArray();
+
+        // Each single-row column forces that row into every valid cover.
+        var selected = new SortedSet<int>(chart.Values.Where(rows => rows.Count == 1).Select(rows => rows[0]));
+        var uncovered = new HashSet<int>(chart.Keys);
+        foreach (int row in selected)
+            uncovered.ExceptWith(primes[row].IncludeIds);
+
+        var covers = new List<SortedSet<QMCTerm>>();
+        var seenCovers = new HashSet<string>();
+        int bestTermCount = int.MaxValue;
+        int bestLiteralCount = int.MaxValue;
+        Search(uncovered, selected.Sum(row => literalCounts[row]));
+        return covers;
+
+        void Search(HashSet<int> remaining, int literalCount)
+        {
+            // compare complete covers
+            // term count => literal count
+            if (remaining.Count == 0)
+            {
+                if (selected.Count > bestTermCount ||
+                    (selected.Count == bestTermCount && literalCount > bestLiteralCount))
+                    return;
+
+                if (selected.Count < bestTermCount || literalCount < bestLiteralCount)
+                {
+                    bestTermCount = selected.Count;
+                    bestLiteralCount = literalCount;
+                    covers.Clear();
+                    seenCovers.Clear();
+                }
+
+                if (seenCovers.Add(string.Join(",", selected)))
+                    covers.Add(new SortedSet<QMCTerm>(selected.Select(row => primes[row])));
+                return;
+            }
+
+            if (selected.Count >= bestTermCount)
+                return;
+
+            // branch (min candidate rows in uncovered minterm)
+            int id = remaining.MinBy(id => chart[id].Count);
+            foreach (int row in chart[id])
+            {
+                selected.Add(row);
+                var next = new HashSet<int>(remaining);
+                next.ExceptWith(primes[row].IncludeIds);
+                Search(next, literalCount + literalCounts[row]);
+                selected.Remove(row);
+            }
         }
     }
 
-    // this.FindEssentialPrimeImplicants()
-    // not work correctly.
-    public List<SortedSet<QMCTerm>> FindEssentialPrimeImplicants() => this._FindEssentialPrimeImplicants();
-    private List<SortedSet<QMCTerm>> _FindEssentialPrimeImplicants()
-    {
-        List<QMCTerm> primeImplicants = this.PrimeImplicants.ToList();
-        List<SortedSet<int>> epiListIdxSets = new List<SortedSet<int>>();
-        List<bool> epiMinCountIs1 = new List<bool>();
-        List<SortedSet<int>> epiMin = new List<SortedSet<int>>();
-        SortedSet<int> reducedTermId = new SortedSet<int>();
-        SortedSet<int> reducedListIdx = new SortedSet<int>();
-        SortedSet<int> allIds = new SortedSet<int>();
-        foreach (QMCTerm each in primeImplicants)
-        {
-            foreach (int id in each.IncludeIds) 
-            {
-                allIds.Add(id);
-            }
-        }
-        
-        int totalTermIdCount = new SortedSet<int> (primeImplicants
-            .SelectMany(term => term.IncludeIds)
-        ).Count;
+    internal static List<string> RenderMinSOP(List<SortedSet<QMCTerm>> covers, string[] literals)
+        => covers.Select(cover => cover.Count == 0
+            ? "0"
+            : string.Join(" + ", cover.Select(term => term.ToVariables(literals)))).ToList();
 
-        while (reducedTermId.Count < totalTermIdCount)
-        {
-            // init
-            epiListIdxSets.Add(new SortedSet<int>());
-            epiMin.Add(new SortedSet<int>());
-            epiMinCountIs1.Add(false);
-
-            // Count each term id exists
-            DefaultDictionary<int, SortedSet<int>> idIncludes = new DefaultDictionary<int, SortedSet<int>>();
-            for (int listIdx = 0; listIdx < primeImplicants.Count; listIdx++)
-            {
-                QMCTerm each = primeImplicants[listIdx];
-                foreach (int termId in each.IncludeIds)
-                    if (!reducedTermId.Contains(termId))                
-                        idIncludes[termId].Add(listIdx);
-            }
-
-            // Find Minimum Count that Each Valid Term
-            int minIncludeCounts = idIncludes
-                .Where(kv => !reducedTermId.Contains(kv.Key))
-                .Select(kv => kv.Value.Count)
-                .Min();
-            SortedSet<int> minIncludes = new SortedSet<int>(primeImplicants
-                .Where(each => each.IncludeIds.Count == minIncludeCounts)
-                .Select(each =>
-                    each.IncludeIds
-                    .Where(termId => !reducedTermId.Contains(termId))
-                    .Select(termId => termId)
-                )
-                .SelectMany(each => each)
-                .ToArray()
-            );
-            epiMin[epiMin.Count - 1] = minIncludes;
-            epiMinCountIs1[epiMinCountIs1.Count - 1] = (minIncludeCounts == 1);
-
-            // Mark Reducing Targets
-            foreach (var kv in idIncludes)
-            {
-                if (kv.Value.Count == minIncludeCounts)
-                {
-                    reducedTermId.Add(kv.Key);
-                    foreach(int listIdx in kv.Value)
-                    {
-                        if (!reducedListIdx.Contains(listIdx)) {
-                            epiListIdxSets.Last().Add(listIdx);
-                            reducedListIdx.Add(listIdx);
-                        }
-                    }
-                }
-            }
-            foreach (var listIdx in reducedListIdx)
-            {
-                QMCTerm each = primeImplicants[listIdx];
-                foreach (int termId in each.IncludeIds)
-                {
-                    reducedTermId.Add(termId);
-                }
-            }
-        }
-        
-        // Queue includes epis.
-        // Now merge others by popping and pushing
-        SortedSet<int> processedTerm = new SortedSet<int>();
-        Queue<SortedSet<QMCTerm>> queue = new Queue<SortedSet<QMCTerm>>();
-        foreach (int listIdx in epiListIdxSets[0])
-        {
-            QMCTerm now = primeImplicants[listIdx];
-            queue.Enqueue(
-                new SortedSet<QMCTerm>(new QMCTerm[] { now })
-            );
-            foreach (int id in now.IncludeIds)
-            {
-                processedTerm.Add(id);
-            }
-        }
-        
-        for (int i = 1; i < epiListIdxSets.Count; i++)
-        {
-            if (epiMin[i].Count == 1)
-            {
-                // Find to add
-                // `adding` is term that be added to all of queue
-                SortedSet<QMCTerm> adding = new SortedSet<QMCTerm>();
-                foreach (int listIdx in epiListIdxSets[i])
-                {
-                    QMCTerm now = primeImplicants[listIdx];
-                    adding.Add(now);
-                    foreach (int id in now.IncludeIds)
-                    {
-                        processedTerm.Add(id);
-                    }
-                }
-                // Add
-                // apply `adding`
-                for (int q = 0; q < queue.Count; q++)
-                {
-                    SortedSet<QMCTerm> now = queue.Dequeue();
-                    now.UnionWith(adding);
-                    queue.Enqueue(now);
-                }
-            }
-            else
-            {
-                // Find to add
-                List<int> epiListIdxSet = epiListIdxSets[i].ToList();
-                SortedSet<int> targetRemainedTerms = new SortedSet<int>(allIds.Except(processedTerm));
-                List<int> nowIdxSets = epiListIdxSets[i].ToList();
-                Queue<Tuple<SortedSet<QMCTerm>, SortedSet<int>, int>> addingQueue = new Queue<Tuple<SortedSet<QMCTerm>, SortedSet<int>, int>>();
-
-                // Push item will be queue's first element
-                for (int j = 0; j < nowIdxSets.Count; j++)
-                {
-                    int nowIdx = nowIdxSets[j];
-                    QMCTerm nowQMCTerm = primeImplicants[nowIdx];
-                    SortedSet<int> includesTargetRemainedSet = new SortedSet<int>();
-                    foreach (int id in nowQMCTerm.IncludeIds)
-                    {
-                        if (targetRemainedTerms.Contains(id))
-                        {
-                            includesTargetRemainedSet.Add(id);
-                        }
-                    }
-                    addingQueue.Enqueue
-                    (
-                        new Tuple<SortedSet<QMCTerm>, SortedSet<int>, int>(new SortedSet<QMCTerm>(new QMCTerm[]{ nowQMCTerm }), includesTargetRemainedSet, includesTargetRemainedSet.Count)
-                    );
-                }
-
-                // Make `adding` using Queue
-                for (int _a = 0; _a < addingQueue.Count; _a++)
-                {
-                    var popped = addingQueue.Dequeue();
-                    (SortedSet<QMCTerm> poppedQMCTerm, SortedSet<int> poppedIdSet, int cost) = popped;
-                    
-                    for (int j = 1; j < nowIdxSets.Count; j++)
-                    {
-                        int nowIdx = nowIdxSets[j];
-                        QMCTerm nowQMCTerm = primeImplicants[nowIdx];
-                        IEnumerable<int> nowIdSet = nowQMCTerm.IncludeIds.Intersect(targetRemainedTerms);
-                        SortedSet<int> nowIdSetExcept = new SortedSet<int>(nowIdSet.Except(poppedIdSet));
-                        // Update if exists changes to update
-                        if (nowIdSetExcept.Count != 0)
-                        {
-                            SortedSet<QMCTerm> termSet = new SortedSet<QMCTerm>
-                            (
-                                poppedQMCTerm.Union(new QMCTerm[]{nowQMCTerm})
-                            );
-                            SortedSet<int> idSet = new SortedSet<int>(poppedIdSet.Union(nowIdSetExcept));
-                            addingQueue.Enqueue(new Tuple<SortedSet<QMCTerm>, SortedSet<int>, int>(termSet, idSet, cost + nowIdSetExcept.Count));
-                        }
-                    }
-
-                }
-
-                // Find minCost
-                int minCost = (int)1e9;
-                for (int _a = 0; _a < addingQueue.Count; _a++)
-                {
-                    var popped = addingQueue.Dequeue();
-                    int cost = popped.Item3;
-                    minCost = Math.Min(minCost, cost);
-                    addingQueue.Enqueue(popped);
-                }
-
-                for (int _a = 0; _a < addingQueue.Count; _a++)
-                {
-                    var now = addingQueue.Dequeue();
-                    addingQueue.Enqueue(now);
-                }
-
-                // Add
-                // apply `adding`
-                for (int _q = 0; _q < queue.Count; _q++)
-                {
-                    SortedSet<QMCTerm> now = queue.Dequeue();
-                    for (int _a = 0; _a < addingQueue.Count; _a++)
-                    {
-                        (SortedSet<QMCTerm> addingTerms, SortedSet<int> addingTermIds, int addingTermCosts) = addingQueue.Dequeue();
-                        if (addingTermCosts == minCost)
-                        {
-                            SortedSet<QMCTerm> newSet = new SortedSet<QMCTerm>(now.Union(addingTerms));
-                            queue.Enqueue(newSet);
-                        }
-                    }
-                }
-
-            }
-
-        }
-
-        return new List<SortedSet<QMCTerm>>(queue);
-    }
-
-    public List<string> RenderMinSOP()
-    {
-        List<QMCTerm> primeImplicants = this.PrimeImplicants.ToList();
-        List<SortedSet<QMCTerm>> essentialPrimeImplicants = this.FindEssentialPrimeImplicants();
-        Queue<string> stringBuffer = new Queue<string>();
-        foreach(SortedSet<QMCTerm> termSet in essentialPrimeImplicants)
-        {
-            stringBuffer.Enqueue(
-                string.Join(" + ",
-                    termSet
-                        .Select(term => term.ToVariables(this.Literals))
-                )
-            );
-        }
-        
-        return stringBuffer.ToList();
-    }
+    public List<string> RenderMinSOP() => RenderMinSOP(this.FindEssentialPrimeImplicants(), this.Literals);
 }

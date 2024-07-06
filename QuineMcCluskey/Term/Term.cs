@@ -108,13 +108,23 @@ public class Term : IComparable
         }
         return new TermDiff(diffCount, diffs);
     }
+    internal bool CanMerge(Term other, TermDiff diff)
+    {
+        // All wildcard positions must match. The one differing bit must be 0 vs. 1.
+        if (diff.diffCount != 1)
+            return false;
+
+        int changedBit = Array.IndexOf(diff.diffs, true);
+        return this.bits[changedBit] != Bit.X && other.bits[changedBit] != Bit.X;
+    }
+
     public Term Merge(Term other)
     {
         return Merge(other, Diff(other));
     }
     public Term Merge(Term other, TermDiff diff)
     {
-        if (diff.diffCount != 1)
+        if (!CanMerge(other, diff))
         {
             throw new TermDiffCountNot1Error();
         }
@@ -171,7 +181,7 @@ public class Term : IComparable
                     break;
             }
         }
-        return string.Join("", rendered);
+        return bits.All(bit => bit == Bit.X) ? "1" : string.Join("", rendered);
     }
 }
 

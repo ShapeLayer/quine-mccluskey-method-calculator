@@ -1,64 +1,86 @@
-using System.Collections;
-using System.Collections.Generic;
 using QuineMcCluskey;
-using QuineMcCluskey.Commons;
 using QuineMcCluskey.Term;
+using Calculator = QuineMcCluskey.QuineMcCluskey;
 namespace QuineMcCluskeyTest;
 
 [TestClass]
 public class QuineMcCluskeyTest
 {
+    private static readonly string[] Literals = { "w", "x", "y", "z" };
+    private static readonly int[] ManualTerms = { 0, 4, 8, 5, 12, 7, 11, 15 };
+
     [TestMethod]
-    public void TestWorkerGetPrimeImplicantsManual1()
+    public void FindsOnlyMaximalImplicantsWithCorrectBits()
     {
-        QuineMcCluskeyWorker worker = new QuineMcCluskeyWorker(
-            new List<QMCTerm> {
-                new QMCTerm(4, new Bit[]{ Bit.F, Bit.F, Bit.F, Bit.F }, 0),  // A
-                new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.F, Bit.F }, 4),  // B
-                new QMCTerm(4, new Bit[]{ Bit.T, Bit.F, Bit.F, Bit.F }, 8),  // C
-                new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.F, Bit.T }, 5),  // D
-                new QMCTerm(4, new Bit[]{ Bit.T, Bit.T, Bit.F, Bit.F }, 12), // E
-                new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.T, Bit.T }, 7),  // F
-                new QMCTerm(4, new Bit[]{ Bit.T, Bit.F, Bit.T, Bit.T }, 11), // G
-                new QMCTerm(4, new Bit[]{ Bit.T, Bit.T, Bit.T, Bit.T }, 15)  // H
-            }, 4, new string[] {"w", "x", "y", "z"}
-        );
-        
-        bool areEqual = true;
-        List<QMCTerm> implicantsWorked = worker.PrimeImplicants.ToList();
-        List<QMCTerm> implicantsManual = new List<QMCTerm>(new QMCTerm[] {
-            new QMCTerm(4, new Bit[]{ Bit.F, Bit.X, Bit.F, Bit.F }, new int[]{ 0, 4 }),
-            new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.F, Bit.X }, new int[]{ 4, 5 }),
-            new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.X, Bit.T }, new int[]{ 5, 7 }),
-            new QMCTerm(4, new Bit[]{ Bit.X, Bit.T, Bit.T, Bit.T }, new int[]{ 7, 15 }),
-            new QMCTerm(4, new Bit[]{ Bit.T, Bit.X, Bit.T, Bit.T }, new int[]{ 11, 15 }),
-            new QMCTerm(4, new Bit[]{ Bit.X, Bit.X, Bit.F, Bit.F }, new int[]{ 0, 4, 8, 12 })
-        });
-        
-        for (int i = 0; i < implicantsWorked.Count; i++)
+        var worker = new QuineMcCluskeyWorker(MakeTerms(ManualTerms), 4, Literals);
+        var calculator = new Calculator(MakeTerms(ManualTerms), new(), 4, Literals);
+        string[] expected = { "w'xy'", "w'xz", "xyz", "wyz", "y'z'" };
+
+        for (int run = 0; run < 2; run++)
         {
-            areEqual = areEqual && (implicantsManual[i].Equals(implicantsWorked[i]));
+            CollectionAssert.AreEqual(expected, worker.PrimeImplicants.Select(t => t.ToVariables(Literals)).ToArray());
+            CollectionAssert.AreEqual(expected, calculator.PrimeImplicants.Select(t => t.ToVariables(Literals)).ToArray());
+            CollectionAssert.AreEqual(new[] { 8, 8, 1 }, worker.terms.Select(stage => stage.Count).ToArray());
         }
-        Assert.IsTrue(areEqual);
     }
 
     [TestMethod]
-    public void TestWorkerRenderMinimumSOPManual1()
+    public void CombinesAllRequiredPrimeImplicants()
     {
-        QuineMcCluskeyWorker worker = new QuineMcCluskeyWorker(
-            new List<QMCTerm> {
-                new QMCTerm(4, new Bit[]{ Bit.F, Bit.F, Bit.F, Bit.F }, 0),  // A
-                new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.F, Bit.F }, 4),  // B
-                new QMCTerm(4, new Bit[]{ Bit.T, Bit.F, Bit.F, Bit.F }, 8),  // C
-                new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.F, Bit.T }, 5),  // D
-                new QMCTerm(4, new Bit[]{ Bit.T, Bit.T, Bit.F, Bit.F }, 12), // E
-                new QMCTerm(4, new Bit[]{ Bit.F, Bit.T, Bit.T, Bit.T }, 7),  // F
-                new QMCTerm(4, new Bit[]{ Bit.T, Bit.F, Bit.T, Bit.T }, 11), // G
-                new QMCTerm(4, new Bit[]{ Bit.T, Bit.T, Bit.T, Bit.T }, 15)  // H
-            }, 4, new string[] {"w", "x", "y", "z"}
+        AssertMinimumSops
+        (
+            ManualTerms, new[] { "w'xz + wyz + y'z'" }
         );
-        SortedSet<string> minSOPWorked = new SortedSet<string>( worker.RenderMinSOP() );
-        SortedSet<string> minSOPManual = new SortedSet<string>( new string[]{ "w'xy' + w'xz + xyz + wyz", "w'xy' + w'xz + xyz + y'z'" } );
-        Assert.IsTrue(minSOPManual.Except(minSOPWorked).Count() == 0);
+    }
+
+    [TestMethod]
+    public void ReturnsAllTiedMinimumCoversWithoutDuplicates()
+    {
+        AssertMinimumSops(new[] { 0, 1, 2, 5, 6, 7 }, new[]
+        {
+            "w'x'y' + w'yz' + w'xz",
+            "w'x'z' + w'y'z + w'xy"
+        });
+    }
+
+    [TestMethod]
+    public void UsesDontCaresToMergeButDoesNotRequireTheirCoverage()
+    {
+        AssertMinimumSops(new[] { 0, 1 }, new[] { "w'x'" }, new[] { 2, 3, 7 });
+    }
+
+    [TestMethod]
+    public void PrefersFewerLiteralsAmongCoversWithEqualTermCounts()
+    {
+        AssertMinimumSops
+        (
+            new[] { 1, 5, 7, 12 },
+            new[] { "w'y'z + xz + wx" },
+            new[] { 8, 13, 14, 15 }
+        );
+    }
+
+    [TestMethod]
+    public void RendersConstantFunctions()
+    {
+        AssertMinimumSops(Array.Empty<int>(), new[] { "0" });
+        AssertMinimumSops(Array.Empty<int>(), new[] { "0" }, new[] { 0, 1 });
+        AssertMinimumSops(Enumerable.Range(0, 16).ToArray(), new[] { "1" });
+        AssertMinimumSops(new[] { 0 }, new[] { "1" }, Enumerable.Range(1, 15).ToArray());
+    }
+
+    private static List<QMCTerm> MakeTerms(IEnumerable<int> ids)
+        => ids.Select(id => new QMCTerm(4, id)).ToList();
+
+    private static void AssertMinimumSops(int[] required, string[] expected, int[]? dontCares = null)
+    {
+        var calculator = new Calculator(MakeTerms(required), MakeTerms(dontCares ?? Array.Empty<int>()), 4, Literals);
+        CollectionAssert.AreEquivalent(expected, calculator.RenderMinSOP());
+
+        if (dontCares == null)
+        {
+            var worker = new QuineMcCluskeyWorker(MakeTerms(required), 4, Literals);
+            CollectionAssert.AreEquivalent(expected, worker.RenderMinSOP());
+        }
     }
 }

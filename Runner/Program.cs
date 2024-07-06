@@ -90,12 +90,12 @@ public class Program
         );
 
         Console.WriteLine("Essential Prime Implicants");
-        List<SortedSet<QMCTerm>> epiList = worker.FindEssentialPrimeImplicants();
+        SortedSet<QMCTerm> essentialPrimeImplicants = worker.GetEssentialPrimeImplicants();
         Console.WriteLine
         (
             string.Join(
                 ", ",
-                epiList[0]
+                essentialPrimeImplicants
                     .Select(x => x.ToVariables(worker.Literals))
             )
         );
@@ -124,10 +124,10 @@ public class Program
             Console.WriteLine($"Error! Length of literals({argv.Length} is not number of literals that entered ({inputFormat.argc}))");
         }
         
-        string gets;
+        string? gets;
         Console.Write("Enter the terms (must be seperated by space(' ')): ");
         gets = Console.ReadLine();
-        if (gets.Length > 0)
+        if (!string.IsNullOrWhiteSpace(gets))
         {
             inputFormat.terms = gets.Split(' ')
                 .Select(x => int.Parse(x))
@@ -139,7 +139,7 @@ public class Program
         }
         Console.Write("Enter the don't cares (must be seperated by space(' ')): ");
         gets = Console.ReadLine();
-        if (gets.Length > 0)
+        if (!string.IsNullOrWhiteSpace(gets))
         {
             inputFormat.dontCares = gets.Split(' ')
                 .Select(x => int.Parse(x))
